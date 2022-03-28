@@ -1,4 +1,4 @@
-function info = read_Intan_header(file,path,verbose)
+function info = read_Intan_header(path,verbose)
 % Access from "read_raw_data"
 
 % Shiv REV 
@@ -22,11 +22,9 @@ function info = read_Intan_header(file,path,verbose)
 % >> amplifier_channels(1)
 % >> plot(t_amplifier, amplifier_data(1,:))
 if ~exist('verbose','var'); verbose = 0; end
-if ~exist('file','var') && ~exist('path','var')
-    [file, path, filterindex] = ...
-        uigetfile('*.rhd', 'Select an RHD2000 Data File', 'MultiSelect', 'off');
+if ~exist('path','var')
+    path = uigetdir('','Select an RHD2000 Data Folder');
 end
-if (file == 0); return; end
 
 % Read most recent file automatically.
 % path = 'C:\Users\Reid\Documents\RHD2132\testing\';
@@ -34,8 +32,13 @@ if (file == 0); return; end
 % file = d(end).name;
 
 tic;
+file = 'info.rhd';
 filename = fullfile(path,file);
-fid = fopen(filename, 'r');
+if isfile(filename)
+    fid = fopen(filename, 'r');
+else
+    error('-- Select a valid folder --')
+end
 
 s = dir(filename);
 filesize = s.bytes;

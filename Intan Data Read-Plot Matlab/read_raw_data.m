@@ -1,44 +1,73 @@
-function eag = read_raw_data(plot_flag,file)
+function [raw,cropped] = read_raw_data(raw_only, plot_flag, folder)
 %% Intan files (.rhd & .dat) to Matlab datatype (.mat)
 % Data Format : "One File Per Channel"
+% Output `cropped` - overlapped EAG responses as a matrix
+% `raw` - raw time and voltage data
+cropped = struct; raw = struct;
 
+if ~exist('raw_only','var'); raw_only=0; end
+if ~exist('folder','var'); folder=[]; end
+if ~exist('plot_flag','var'); plot_flag=[1,1]; end % [1,1] - Plot raw & crop
 % plot_flag  = [ RAW-EXP-DATA-PLOT, EAG-RESPONSES ]
-if ~exist('plot_flag','var'); plot_flag=[1,1]; end
-if ~exist('file','var'); file=[]; end
-data = get_header(file);
 
-%%
-
-% Save data locations
+%% Raw traces
+% All possible data locations
+data = get_header(folder);
 data.file.folder = data.info.path;
-data.file.header = [data.info.path, data.info.filename];
-data.file.time = [data.file.folder,'time.dat'];
-data.file.amp1 = [data.file.folder,'amp-A-014.dat'];
-data.file.EnSig = [data.file.folder,'board-DIN-09.dat'];
-data.file.LSig = [data.file.folder,'board-DIN-10.dat'];
-data.file.RSig = [data.file.folder,'board-DIN-11.dat'];
+data.file.header = fullfile(data.info.path, data.info.filename);
+data.file.time = fullfile(data.file.folder,'time.dat');
+data.file.amp1 = fullfile(data.file.folder,'amp-A-014.dat');
+data.file.EnSig = fullfile(data.file.folder,'board-DIN-09.dat');
+data.file.LSig = fullfile(data.file.folder,'board-DIN-10.dat');
+data.file.RSig = fullfile(data.file.folder,'board-DIN-11.dat');
 
-%%
+% read available files
 data.time = get_time(data);
-data.amp1_uV = get_amp(data.file.amp1); % check? uV or V
-data.EnSig = get_din(data.file.EnSig);
-% data.LSig = get_din(data.file.LSig); % DISABLE for SINGLE SIDE STIM
-data.RSig = get_din(data.file.RSig);
+data.amp1_uV = get_amp(data.file.amp1);
+if isfile(data.file.EnSig);data.EnSig = get_din(data.file.EnSig); end
+if isfile(data.file.LSig); data.LSig = get_din(data.file.LSig); end
+if isfile(data.file.RSig); data.RSig = get_din(data.file.RSig); end
 
-%%
+raw.time_sec = data.time;
+raw.amp_mV = data.amp1_uV/1000;
+
+% Plot raw data
 if plot_flag(1); plot_raw_data(data); end
-    
-%% Read D-in and stim
-indStart = find(diff(data.EnSig)==1); 
-if isempty(indStart); indStart=3e5; end
-indStop = find(diff(data.EnSig)==-1);
-indStimSt = find(diff(data.RSig)==1);
-indStimSt = indStimSt(indStimSt>indStart & indStimSt<indStop);
-indStimStp = find(diff(data.RSig)==-1);
-indStimStp = indStimStp(indStimStp>indStart & indStimStp<indStop);
-indStim = round(mean(indStimStp - indStimSt));
 
-%% 
+%% Overlap stimulus-responses (zero-cropped at stim-onset)
+if raw_only; return; end    
+
+if ~isfield(data,'RSig') || isempty(data.RSig)
+    if ~isfield(data,'LSig') || isempty(data.LSig)
+        disp('Error - No signal present to crop responses..')
+        return;
+    else
+        disp('-- Cropped-EAG - R-sig missing, using L-sig instead..')
+        raw_sig = data.LSig;
+    end
+else
+    disp('-- Plotting overlapped eag-response')
+    raw_sig = data.RSig;
+end
+
+% Read D-in and stim
+if isfield(data,'EnSig') && ~isempty(data.EnSig)
+    indStart = find(diff(data.EnSig)==1); 
+    if isempty(indStart); indStart=1; end % all-1 or all-0
+    indStop = find(diff(data.EnSig)==-1);
+    if isempty(indStop); indStop=length(data.time); end
+else
+    indStart=1; indStop=length(data.time);
+end
+
+% Find Stim 
+indStimSt = find(diff(raw_sig)==1);
+indStimSt = indStimSt(indStimSt>indStart & indStimSt<indStop);
+indStimStp = find(diff(raw_sig)==-1);
+indStimStp = indStimStp(indStimStp>indStart & indStimStp<indStop);
+indStim = round(mean(indStimStp - indStimSt)); % actual stim-length (sec)
+
+% get cropped-traces
 cropSec = [-.5 2]; 
 fs = 2e4;
 t_sec = [cropSec(1)*fs:0 1:cropSec(2)*fs]/fs;
@@ -46,7 +75,6 @@ stimStart = -cropSec(1)*fs + 1;
 stimStop = indStim + stimStart;
 eag_uV = nan(length(indStimSt),length(t_sec));
 
-%%
 if plot_flag(2); figure; hold on; end
 for i=1:length(indStimSt)
     eag_uV(i,:) = data.amp1_uV(indStimSt(i)+cropSec(1)*fs:indStimSt(i)+cropSec(2)*fs);
@@ -61,21 +89,21 @@ if plot_flag(2)
     end
     xlabel('Time (Sec)')
     ylabel('EAG Amplitude (uV)')
-%         title(ttl)
+    title(['EAG EXP -- ' data.info.notes.note1 ]);
 end
 
-%% 
-eag = struct;
-eag.t_sec = t_sec;
-eag.mat_uV = eag_uV; 
-eag.stim_ind = [stimStart stimStop];
-eag.info = data.info;
+% export overlapped EAG responses
+cropped.t_sec = t_sec;
+cropped.mat_uV = eag_uV; 
+cropped.stim_ind = [stimStart stimStop];
+cropped.info = data.info;
+
 end
 
-function data = get_header(file)
+function data = get_header(folder)
 fprintf('START :: Reading Intan info.rdh file...\n');
-if ~isempty(file)
-    data.info = read_Intan_header(file.name,file.path);
+if ~isempty(folder)
+    data.info = read_Intan_header(folder);
 else
     data.info = read_Intan_header();
 end
