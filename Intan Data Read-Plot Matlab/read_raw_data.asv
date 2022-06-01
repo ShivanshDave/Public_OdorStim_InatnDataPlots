@@ -32,14 +32,7 @@ if isfile(data.file.RSig); data.RSig = get_din(data.file.RSig); end
 raw.time_sec = data.time;
 raw.amp_mV = data.amp1_uV/1000;
 
-% Export raw data
-% if strcmp(export_mat,'raw')
-if export_mat ~= 0
-    path = uigetdir('C:\Users\User\Documents\DATA_INTAN','Select Folder to Export .MAT');
-    filename = strsplit(data.file.folder,'\');
-    filename = [filename{end} export_mat];
-    writematrix(raw,filename)
-end
+% Export 
 
 % Plot raw data
 if plot_flag(1); plot_raw_data(data); end

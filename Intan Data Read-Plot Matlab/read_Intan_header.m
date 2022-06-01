@@ -23,7 +23,7 @@ function info = read_Intan_header(path,verbose)
 % >> plot(t_amplifier, amplifier_data(1,:))
 if ~exist('verbose','var'); verbose = 0; end
 if ~exist('path','var')
-    path = uigetdir('','Select an RHD2000 Data Folder');
+    path = uigetdir('C:\Users\User\Documents\DATA_INTAN','Select an RHD2000 Data Folder');
 end
 
 % Read most recent file automatically.
