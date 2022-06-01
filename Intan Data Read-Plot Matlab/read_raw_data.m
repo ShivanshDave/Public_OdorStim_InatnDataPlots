@@ -37,7 +37,7 @@ raw.amp_mV = data.amp1_uV/1000;
 if export_mat ~= 0
     path = uigetdir('C:\Users\User\Documents\DATA_INTAN','Select Folder to Export .MAT');
     filename = strsplit(data.file.folder,'\');
-    filename = [path '\' filename{end} export_mat]; % TODO - FUllFile
+    filename = [path '\EXPORT_' filename{end} '.' export_mat]; % TODO - FUllFile
     writematrix([raw.time_sec; raw.amp_mV],filename);
 end
 
