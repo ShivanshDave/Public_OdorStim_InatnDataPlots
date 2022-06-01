@@ -5,10 +5,10 @@ function [raw,cropped] = read_raw_data(export_mat, raw_only, plot_flag, folder)
 % `raw` - raw time and voltage data
 cropped = struct; raw = struct;
 
-if ~exist('export_mat','var') || export_mat==0; export_mat=0; end
-if ~exist('raw_only','var') || raw_only==0; raw_only=0; end
-if ~exist('folder','var') || folder==0; folder=[]; end
-if ~exist('plot_flag','var') || plot_flag==0; plot_flag=[1,1]; end % [1,1] - Plot raw & crop
+if ~exist('export_mat','var'); export_mat=0; end
+if ~exist('raw_only','var'); raw_only=0; end
+if ~exist('folder','var'); folder=[]; end
+if ~exist('plot_flag','var'); plot_flag=[1,1]; end % [1,1] - Plot raw & crop
 % plot_flag  = [ RAW-EXP-DATA-PLOT, EAG-RESPONSES ]
 
 %% Raw traces
@@ -37,8 +37,8 @@ raw.amp_mV = data.amp1_uV/1000;
 if export_mat ~= 0
     path = uigetdir('C:\Users\User\Documents\DATA_INTAN','Select Folder to Export .MAT');
     filename = strsplit(data.file.folder,'\');
-    filename = [filename{end} export_mat];
-    writematrix(raw,filename)
+    filename = [path '\' filename{end} export_mat]; % TODO - FUllFile
+    writematrix([raw.time_sec; raw.amp_mV],filename);
 end
 
 % Plot raw data
