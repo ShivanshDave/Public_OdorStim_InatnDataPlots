@@ -5,7 +5,7 @@ function [raw,cropped] = read_raw_data(export_mat, raw_only, plot_flag, folder)
 % `raw` - raw time and voltage data
 cropped = struct; raw = struct;
 
-if ~exist('export_mat','var'); export_mat=0; end
+if ~exist('export_mat','var'); export_mat=0; end % Default is 'txt'
 if ~exist('raw_only','var'); raw_only=0; end
 if ~exist('folder','var'); folder=[]; end
 if ~exist('plot_flag','var'); plot_flag=[1,1]; end % [1,1] - Plot raw & crop
