@@ -1,10 +1,11 @@
-function [raw,cropped] = read_raw_data(raw_only, plot_flag, folder)
+function [raw,cropped] = read_raw_data(export_mat, raw_only, plot_flag, folder)
 %% Intan files (.rhd & .dat) to Matlab datatype (.mat)
 % Data Format : "One File Per Channel"
 % Output `cropped` - overlapped EAG responses as a matrix
 % `raw` - raw time and voltage data
 cropped = struct; raw = struct;
 
+if ~exist('export_mat','var'); export_mat=0; end % Default is 'txt'
 if ~exist('raw_only','var'); raw_only=0; end
 if ~exist('folder','var'); folder=[]; end
 if ~exist('plot_flag','var'); plot_flag=[1,1]; end % [1,1] - Plot raw & crop
@@ -30,6 +31,15 @@ if isfile(data.file.RSig); data.RSig = get_din(data.file.RSig); end
 
 raw.time_sec = data.time;
 raw.amp_mV = data.amp1_uV/1000;
+
+% Export raw data
+% if strcmp(export_mat,'raw')
+if export_mat ~= 0
+    path = uigetdir('C:\Users\User\Documents\DATA_INTAN','Select Folder to Export .MAT');
+    filename = strsplit(data.file.folder,'\');
+    filename = [path '\EXPORT_' filename{end} '.' export_mat]; % TODO - FUllFile
+    writematrix([raw.time_sec, raw.amp_mV],filename);
+end
 
 % Plot raw data
 if plot_flag(1); plot_raw_data(data); end
