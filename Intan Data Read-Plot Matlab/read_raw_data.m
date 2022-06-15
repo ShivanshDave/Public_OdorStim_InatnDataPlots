@@ -38,7 +38,7 @@ if export_mat ~= 0
     path = uigetdir('C:\Users\User\Documents\DATA_INTAN','Select Folder to Export .MAT');
     filename = strsplit(data.file.folder,'\');
     filename = [path '\EXPORT_' filename{end} '.' export_mat]; % TODO - FUllFile
-    writematrix([raw.time_sec, raw.amp_mV],filename);
+    writematrix([raw.time_sec, data.RSig, raw.amp_mV],filename); % Time | Stim | EAG
 end
 
 % Plot raw data
